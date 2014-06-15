@@ -7,6 +7,8 @@ rpc over socket.io, with promise
 clientside:
 
 ```coffeescript
+socket = require('rpc.io-client')(2000)  # timeout
+
 result = socket.call 'users.get', id: 1024
 result.then console.log
 ```
@@ -14,14 +16,17 @@ result.then console.log
 serverside:
 
 ```coffeescript
-socket.register 'users.get', (id)->
-    nickname: 'foo'
+io.on 'connection', (socket)->
+    socket = rpc socket
+
+    socket.register 'users.get', (id)->
+        nickname: 'foo'
 ```
 
 ### namespace
 
 ```coffeescript
-socket.register 'users'
+socket.register 'users',
 
     get: (id)->
         db.fetchUser id
@@ -33,7 +38,7 @@ socket.register 'users'
 classes should also work
 
 ```coffeescript
-socket.register 'name.space.foo' new Foo
+socket.register 'name.space.foo', new Foo
 ```
 
 ### optional params
@@ -48,7 +53,7 @@ socket.register 'projects'
     create: (name, description)->
 ```
 
-### handle all rpc call
+### handle all rpc call(TBD)
 
 ```coffeescript
 socket.on 'rpc-call', (method, kwargs)->
@@ -64,7 +69,7 @@ socket.call 'users.list', (users)->
 socket.call 'users.get', id: 2048, (user)->
 ```
 
-promises can be used as params
+promises can be used as params(TBD)
 
 ```coffeescript
 project = socket.call 'projects.get', id: projectId
@@ -76,10 +81,10 @@ returing promise
 
 ```coffeescript
 socket.register 'users.get', (id)->
-    userPromise()
+    new Promise (resolve, reject)->
 ```
 
-### magics(require ecmascript6)
+### magics(require ecmascript6 TBD)
 
 ```coffeescript
 users = socket.users.list()
