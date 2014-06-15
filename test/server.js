@@ -42,6 +42,19 @@
     socket.register('error', function(msg) {
       throw new Error(msg);
     });
+    socket.register('optional', {
+      bar: 'foo'
+    }, function(foo, bar) {
+      return {
+        foo: foo,
+        bar: bar
+      };
+    });
+    socket.register('ns', {
+      ping: function() {
+        return 'pong';
+      }
+    });
     return socket.emit('welcome', 'msg');
   });
 

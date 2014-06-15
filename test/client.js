@@ -10,7 +10,7 @@
 
   socket = rpcio(800);
 
-  describe('call', function() {
+  describe('client', function() {
     it('should support callback', function(done) {
       return socket.call('add', {
         n1: 1,
@@ -31,7 +31,7 @@
         return done();
       });
     });
-    it('should time out', function(done) {
+    return it('should time out', function(done) {
       var result;
       result = socket.call('sleep', {
         time: 1000
@@ -44,6 +44,9 @@
         return done();
       });
     });
+  });
+
+  describe('server', function() {
     it('should wake up on time', function(done) {
       var result;
       result = socket.call('sleep', {
@@ -69,13 +72,49 @@
         return done();
       });
     });
-    return it('should fail on unregistered method', function(done) {
+    it('should fail on unregistered method', function(done) {
       var result;
       result = socket.call('foo', {
         foo: 'bar'
       });
       return result["catch"](function(err) {
         return done();
+      });
+    });
+    it('should complain when param missing', function(done) {
+      var result;
+      result = socket.call('add', {
+        n1: 10
+      });
+      return result["catch"](function(err) {
+        return done();
+      });
+    });
+    it('should support optional params', function(done) {
+      var result;
+      result = socket.call('optional', {
+        foo: 'bar'
+      });
+      result.then(function(value) {
+        expect(value).to.deep.equal({
+          foo: 'bar',
+          bar: 'foo'
+        });
+        return done();
+      });
+      return result["catch"](function(err) {
+        return done(new Error(err));
+      });
+    });
+    return it('should support namespace', function(done) {
+      var result;
+      result = socket.call('ns.ping');
+      result.then(function(value) {
+        expect(value).to.equal('pong');
+        return done();
+      });
+      return result["catch"](function(err) {
+        return done(new Error(err));
       });
     });
   });

@@ -28,6 +28,14 @@ io.on 'connection', (socket)->
     socket.register 'error', (msg)->
         throw new Error msg
 
+    socket.register 'optional', bar: 'foo', (foo, bar)->
+        foo:foo, bar:bar
+
+    socket.register 'ns',
+
+        ping: ->
+            'pong'
+
     socket.emit 'welcome', 'msg'
 
 http.listen 3000, ->

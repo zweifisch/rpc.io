@@ -8,7 +8,7 @@
   getSignature = function(fn) {
     var params;
     params = /\(([\s\S]*?)\)/.exec(fn);
-    if (params) {
+    if (params && params[1].trim()) {
       return params[1].split(',').map(function(x) {
         return x.trim();
       });
@@ -18,43 +18,42 @@
   };
 
   module.exports = function(socket) {
-    var closures, defaults, namespace, signatures;
-    namespace = null;
+    var closures, defaults, signatures;
     closures = {};
     signatures = {};
     defaults = {};
     socket.register = function() {
-      var args, closure, method, _defaults, _ref;
+      var args, closure, method, methods, namespace, _defaults, _results;
       args = 1 <= arguments.length ? __slice.call(arguments, 0) : [];
-      if (namespace) {
-        if (args.length !== 1) {
-          throw Error("unexpected args " + args);
-        }
-        if ('object' !== typeof args[0]) {
-          throw Error;
-        }
-        _ref = args[0];
-        for (method in _ref) {
-          if (!__hasProp.call(_ref, method)) continue;
-          closure = _ref[method];
-          closures["" + namespace + "." + method] = closure;
-          if (args[0]["" + method + "_defaults"]) {
-            defaults["" + namespace + "." + method] = args[0]["" + method + "_defaults"];
-          }
-        }
-        return namespace = null;
-      } else {
-        if (args.length === 1) {
-          namespace = args[0];
-          return socket.register;
-        } else if (args.length === 2) {
+      if (args.length === 1) {
+        namespace = args[0];
+        return socket.register;
+      } else if (args.length === 2) {
+        if ('function' === typeof args[1]) {
           method = args[0], closure = args[1];
           return closures[method] = closure;
-        } else if (args.length === 3) {
-          method = args[0], _defaults = args[1], closure = args[2];
-          closures[method] = closure;
-          return defaults[method] = _defaults;
+        } else {
+          namespace = args[0], methods = args[1];
+          if ('object' !== typeof methods) {
+            throw Error("unexpected params");
+          }
+          _results = [];
+          for (method in methods) {
+            if (!__hasProp.call(methods, method)) continue;
+            closure = methods[method];
+            closures["" + namespace + "." + method] = closure;
+            if (methods["" + method + "_defaults"]) {
+              _results.push(defaults["" + namespace + "." + method] = methods["" + method + "_defaults"]);
+            } else {
+              _results.push(void 0);
+            }
+          }
+          return _results;
         }
+      } else if (args.length === 3) {
+        method = args[0], _defaults = args[1], closure = args[2];
+        closures[method] = closure;
+        return defaults[method] = _defaults;
       }
     };
     socket.on('rpc-call', function(id, method, params) {
@@ -82,7 +81,7 @@
           name = _ref[_i];
           if (!(name in params)) {
             if (defaults[method] && name in defaults[method]) {
-              preparedParams.push(defaults[method]);
+              preparedParams.push(defaults[method][name]);
             } else {
               throw new Error("param missing: " + name);
             }

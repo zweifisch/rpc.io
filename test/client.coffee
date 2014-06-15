@@ -4,7 +4,7 @@ expect = chai.expect
 rpcio = require 'rpc.io-client'
 socket = rpcio 800
 
-describe 'call', ->
+describe 'client', ->
 
     it 'should support callback', (done)->
 
@@ -28,6 +28,8 @@ describe 'call', ->
             expect(err).to.equal 'timeout'
             done()
 
+describe 'server', ->
+
     it 'should wake up on time', (done)->
 
         result = socket.call 'sleep', time: 500
@@ -50,5 +52,29 @@ describe 'call', ->
         result = socket.call 'foo', foo: 'bar'
         result.catch (err)->
             done()
+
+    it 'should complain when param missing', (done)->
+
+        result = socket.call 'add', n1: 10
+        result.catch (err)->
+            done()
+
+    it 'should support optional params', (done)->
+
+        result = socket.call 'optional', foo: 'bar'
+        result.then (value)->
+            expect(value).to.deep.equal foo: 'bar', bar: 'foo'
+            done()
+        result.catch (err)->
+            done new Error err
+
+    it 'should support namespace', (done)->
+
+        result = socket.call 'ns.ping'
+        result.then (value)->
+            expect(value).to.equal 'pong'
+            done()
+        result.catch (err)->
+            done new Error err
 
 mocha.run()

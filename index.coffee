@@ -1,38 +1,36 @@
 
 getSignature = (fn)->
     params = /\(([\s\S]*?)\)/.exec fn
-    if params
+    if params and params[1].trim()
         params[1].split(',').map (x)-> x.trim()
     else
         []
 
 module.exports = (socket)->
 
-    namespace = null
     closures = {}
     signatures = {}
     defaults = {}
 
     socket.register = (args...)->
-        if namespace
-            throw Error "unexpected args #{args}" unless args.length is 1
-            throw Error unless 'object' is typeof args[0]
-            for own method, closure of args[0]
-                closures["#{namespace}.#{method}"] = closure
-                if args[0]["#{method}_defaults"]
-                    defaults["#{namespace}.#{method}"] = args[0]["#{method}_defaults"]
-            namespace = null
-        else
-            if args.length is 1
-                namespace = args[0]
-                return socket.register
-            else if args.length is 2
+        if args.length is 1
+            namespace = args[0]
+            return socket.register
+        else if args.length is 2
+            if 'function' is typeof args[1]
                 [method, closure] = args
                 closures[method] = closure
-            else if args.length is 3
-                [method, _defaults, closure] = args
-                closures[method] = closure
-                defaults[method] = _defaults
+            else
+                [namespace, methods] = args
+                throw Error "unexpected params" unless 'object' is typeof methods
+                for own method, closure of methods
+                    closures["#{namespace}.#{method}"] = closure
+                    if methods["#{method}_defaults"]
+                        defaults["#{namespace}.#{method}"] = methods["#{method}_defaults"]
+        else if args.length is 3
+            [method, _defaults, closure] = args
+            closures[method] = closure
+            defaults[method] = _defaults
 
     socket.on 'rpc-call', (id, method, params)->
         try
@@ -45,7 +43,7 @@ module.exports = (socket)->
             for name in signatures[method]
                 if name not of params
                     if defaults[method] and name of defaults[method]
-                        preparedParams.push defaults[method]
+                        preparedParams.push defaults[method][name]
                     else
                         throw new Error "param missing: #{name}"
                 else
