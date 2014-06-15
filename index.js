@@ -18,7 +18,7 @@
   };
 
   module.exports = function(socket) {
-    var closures, defaults, signatures;
+    var closures, defaults, rpchandler, signatures;
     closures = {};
     signatures = {};
     defaults = {};
@@ -56,40 +56,47 @@
         return defaults[method] = _defaults;
       }
     };
-    socket.on('rpc-call', function(id, method, params) {
-      var e, name, preparedParams, result, value, _i, _len, _ref;
-      try {
-        if ('object' !== typeof params) {
-          throw new Error('params must be passed as an object');
+    rpchandler = function(method, params) {
+      var name, preparedParams, value, _i, _len, _ref;
+      if ('object' !== typeof params) {
+        throw new Error('params must be passed as an object');
+      }
+      if (!(method in closures)) {
+        throw new Error("method not registered: " + method);
+      }
+      if (__indexOf.call(signatures, method) < 0) {
+        signatures[method] = getSignature(closures[method]);
+      }
+      preparedParams = [];
+      for (name in params) {
+        if (!__hasProp.call(params, name)) continue;
+        value = params[name];
+        if (__indexOf.call(signatures[method], name) < 0) {
+          throw new Error("unexpected param: " + name);
         }
-        if (!(method in closures)) {
-          throw new Error("method not registered: " + method);
-        }
-        if (__indexOf.call(signatures, method) < 0) {
-          signatures[method] = getSignature(closures[method]);
-        }
-        preparedParams = [];
-        for (name in params) {
-          if (!__hasProp.call(params, name)) continue;
-          value = params[name];
-          if (__indexOf.call(signatures[method], name) < 0) {
-            throw new Error("unexpected param: " + name);
-          }
-        }
-        _ref = signatures[method];
-        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-          name = _ref[_i];
-          if (!(name in params)) {
-            if (defaults[method] && name in defaults[method]) {
-              preparedParams.push(defaults[method][name]);
-            } else {
-              throw new Error("param missing: " + name);
-            }
+      }
+      _ref = signatures[method];
+      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+        name = _ref[_i];
+        if (!(name in params)) {
+          if (defaults[method] && name in defaults[method]) {
+            preparedParams.push(defaults[method][name]);
           } else {
-            preparedParams.push(params[name]);
+            throw new Error("param missing: " + name);
           }
+        } else {
+          preparedParams.push(params[name]);
         }
-        result = closures[method].apply(closures, preparedParams);
+      }
+      return closures[method].apply(closures, preparedParams);
+    };
+    socket.onrpc = function(handler) {
+      return rpchandler = handler;
+    };
+    socket.on('rpc-call', function(id, method, params) {
+      var e, result;
+      try {
+        result = rpchandler(method, params, id);
         if ('function' === typeof (result != null ? result.then : void 0)) {
           result.then(function(value) {
             return socket.emit('rpc-result', id, value);

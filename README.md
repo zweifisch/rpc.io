@@ -53,12 +53,6 @@ socket.register 'projects'
     create: (name, description)->
 ```
 
-### handle all rpc call(TBD)
-
-```coffeescript
-socket.on 'rpc-call', (method, kwargs)->
-```
-
 ### more on promise
 
 socket.call returns an promise, but callback also works
@@ -82,6 +76,19 @@ returing promise
 ```coffeescript
 socket.register 'users.get', (id)->
     new Promise (resolve, reject)->
+```
+
+### handle all rpc calls
+
+```coffeescript
+socket.onrpc (method, kwargs)->
+    throw Error "method #{method} not implemented"
+
+socket.onrpc (method, kwargs)->
+    "result"
+
+socket.onrpc (method, kwargs)->
+    new Promise (reslove, reject)->
 ```
 
 ### magics(require ecmascript6 TBD)
