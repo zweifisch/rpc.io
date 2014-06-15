@@ -1,0 +1,23 @@
+{
+  "name": "rpc.io",
+  "version": "0.0.0",
+  "description": "rpc over socket.io, with promise",
+  "main": "index.js",
+  "directories": {
+    "test": "test"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "ccjs": "0.0.3",
+    "chai": "^1.9.1",
+    "express": "^4.4.3",
+    "mocha": "^1.20.1",
+    "promise": "^5.0.0",
+    "socket.io": "^1.0.4"
+  },
+  "dependencies": {}
+}

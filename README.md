@@ -36,6 +36,18 @@ classes should also work
 socket.register 'name.space.foo' new Foo
 ```
 
+### optional params
+
+```coffeescript
+socket.register 'projects.create', {description: ''}, (name, description)->
+
+socket.register 'projects'
+
+    create_defaults:
+        description: ''
+    create: (name, description)->
+```
+
 ### handle all rpc call
 
 ```coffeescript
