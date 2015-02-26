@@ -1,5 +1,7 @@
 # rpc.io
 
+[![NPM Version][npm-image]][npm-url]
+
 rpc over socket.io, with promise
 
 ## usage
@@ -9,8 +11,8 @@ clientside:
 ```coffeescript
 socket = require('rpc.io-client')(2000)  # timeout
 
-result = socket.call 'users.get', id: 1024
-result.then console.log
+socket.call 'users.get', id: 1024
+.then (result)->
 ```
 
 serverside:
@@ -45,7 +47,9 @@ socket.register 'name.space.foo', new Foo
 
 ```coffeescript
 socket.register 'projects.create', {description: ''}, (name, description)->
+```
 
+```coffeescript
 socket.register 'projects'
 
     create_defaults:
@@ -55,7 +59,7 @@ socket.register 'projects'
 
 ### more on promise
 
-socket.call returns an promise, but callback also works
+`socket.call` returns a promise, but callback also works
 
 ```coffeescript
 socket.call 'users.list', (users)->
@@ -71,7 +75,7 @@ ownerId = project.then (project)-> project.ownerId
 owner = socket.call 'users.get', id: ownerId
 ```
 
-returing promise
+server-side handlers should return promises for async operation
 
 ```coffeescript
 socket.register 'users.get', (id)->
@@ -103,3 +107,6 @@ more magic
 {users, projects} = socket
 projects.list()
 ```
+
+[npm-image]: https://img.shields.io/npm/v/rpc.io.svg?style=flat
+[npm-url]: https://npmjs.org/package/rpc.io
