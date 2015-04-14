@@ -11,6 +11,7 @@ module.exports = (socket)->
     closures = {}
     signatures = {}
     defaults = {}
+    defaultHandler = null
 
     socket.register = (args...)->
         if args.length is 1
@@ -32,9 +33,12 @@ module.exports = (socket)->
             closures[method] = closure
             defaults[method] = _defaults
 
-    rpchandler = (method, params)->
+    rpchandler = (method, params, id)->
+        if method not of closures
+            if defaultHandler
+                return defaultHandler method, params, id
+            throw new Error "method not registered: #{method}" unless method of closures
         throw new Error 'params must be passed as an object' unless 'object' is typeof params  # client should ensure params passed correctly
-        throw new Error "method not registered: #{method}" unless method of closures
         signatures[method] = getSignature closures[method] unless method in signatures
         preparedParams = []
         for own name, value of params
@@ -50,7 +54,7 @@ module.exports = (socket)->
         closures[method] preparedParams...
 
     socket.onrpc = (handler)->
-        rpchandler = handler
+        defaultHandler = handler
 
     socket.on 'rpc-call', (id, method, params) ->
         try

@@ -18,10 +18,11 @@
   };
 
   module.exports = function(socket) {
-    var closures, defaults, rpchandler, signatures;
+    var closures, defaultHandler, defaults, rpchandler, signatures;
     closures = {};
     signatures = {};
     defaults = {};
+    defaultHandler = null;
     socket.register = function() {
       var _defaults, args, closure, method, methods, namespace, results;
       args = 1 <= arguments.length ? slice.call(arguments, 0) : [];
@@ -56,13 +57,18 @@
         return defaults[method] = _defaults;
       }
     };
-    rpchandler = function(method, params) {
+    rpchandler = function(method, params, id) {
       var i, len, name, preparedParams, ref, value;
+      if (!(method in closures)) {
+        if (defaultHandler) {
+          return defaultHandler(method, params, id);
+        }
+        if (!(method in closures)) {
+          throw new Error("method not registered: " + method);
+        }
+      }
       if ('object' !== typeof params) {
         throw new Error('params must be passed as an object');
-      }
-      if (!(method in closures)) {
-        throw new Error("method not registered: " + method);
       }
       if (indexOf.call(signatures, method) < 0) {
         signatures[method] = getSignature(closures[method]);
@@ -91,7 +97,7 @@
       return closures[method].apply(closures, preparedParams);
     };
     socket.onrpc = function(handler) {
-      return rpchandler = handler;
+      return defaultHandler = handler;
     };
     socket.on('rpc-call', function(id, method, params) {
       var e, result;
