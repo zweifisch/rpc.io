@@ -61,7 +61,7 @@ module.exports = (socket)->
             result = rpchandler method, params, id
             if 'function' is typeof result?.then
                 result.then (value)-> socket.emit 'rpc-result', id, value
-                result.catch (err)-> socket.emit 'rpc-result', id, null, err
+                result.catch (err)-> socket.emit 'rpc-result', id, null, err?.message or err
             else
                 socket.emit 'rpc-result', id, result
         catch e

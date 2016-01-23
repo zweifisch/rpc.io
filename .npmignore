@@ -1,0 +1,4 @@
+*.coffee
+.travis.yml
+*.tgz
+/test
