@@ -1,3 +1,4 @@
+co = require "co"
 
 getSignature = (fn)->
     params = /\(([\s\S]*?)\)/.exec fn
@@ -8,10 +9,17 @@ getSignature = (fn)->
 
 module.exports = (socket)->
 
-    closures = {}
+    handlers = {}
     signatures = {}
     defaults = {}
     defaultHandler = null
+
+    register = (name, handler, defaultParams)->
+        if handler.constructor.name is 'GeneratorFunction'
+            signatures[name] = getSignature handler
+            handler = co.wrap handler
+        handlers[name] = handler
+        defaults[name] = defaultParams if defaultParams
 
     socket.register = (args...)->
         if args.length is 1
@@ -19,27 +27,25 @@ module.exports = (socket)->
             return socket.register
         else if args.length is 2
             if 'function' is typeof args[1]
-                [method, closure] = args
-                closures[method] = closure
+                [method, handler] = args
+                register method, handler
             else
                 [namespace, methods] = args
                 throw Error "unexpected params" unless 'object' is typeof methods
-                for own method, closure of methods
-                    closures["#{namespace}.#{method}"] = closure
-                    if methods["#{method}_defaults"]
-                        defaults["#{namespace}.#{method}"] = methods["#{method}_defaults"]
+                for own method, handler of methods
+                    if 'function' is typeof handler
+                        register "#{namespace}.#{method}", handler, methods["#{method}_defaults"]
         else if args.length is 3
-            [method, _defaults, closure] = args
-            closures[method] = closure
-            defaults[method] = _defaults
+            [method, defaultParams, handler] = args
+            register method, handler, defaultParams
 
     rpchandler = (method, params, id)->
-        if method not of closures
+        if method not of handlers
             if defaultHandler
                 return defaultHandler method, params, id
-            throw new Error "method not registered: #{method}" unless method of closures
+            throw new Error "method not registered: #{method}" unless method of handlers
         throw new Error 'params must be passed as an object' unless 'object' is typeof params  # client should ensure params passed correctly
-        signatures[method] = getSignature closures[method] unless method in signatures
+        signatures[method] = getSignature handlers[method] unless method of signatures
         preparedParams = []
         for own name, value of params
             throw new Error "unexpected param: #{name}" unless name in signatures[method]
@@ -51,7 +57,7 @@ module.exports = (socket)->
                     throw new Error "param missing: #{name}"
             else
                 preparedParams.push params[name]
-        closures[method] preparedParams...
+        handlers[method] preparedParams...
 
     socket.onrpc = (handler)->
         defaultHandler = handler
