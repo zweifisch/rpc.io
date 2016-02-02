@@ -7,6 +7,16 @@ getSignature = (fn)->
     else
         []
 
+merge = (base, more)->
+    ret = {}
+    if "object" is typeof base
+        for own key,val of base
+            ret[key] = val
+    if "object" is typeof more
+        for own key,val of more
+            ret[key] = val
+    ret
+
 module.exports = (socket)->
 
     handlers = {}
@@ -53,6 +63,8 @@ module.exports = (socket)->
             if name not of params
                 if defaults[method] and name of defaults[method]
                     preparedParams.push defaults[method][name]
+                else if name is "kwargs"
+                    preparedParams.push merge defaults[method], params
                 else
                     throw new Error "param missing: #{name}"
             else
